@@ -14,7 +14,7 @@ type Transport interface {
 	// Consume
 	//  Consume(RPC)
 	//  @Description:从RPC（Remote Procedure Call，远程过程调用）到RPC的通道
-	Consume(RPC) <-chan RPC
+	Consume() <-chan RPC
 
 	// Connect
 	//  Connect(Transport)
