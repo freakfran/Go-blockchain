@@ -21,7 +21,7 @@ type LocalTransport struct {
 //	@Description: New LocalTransport
 //	@param addr
 //	@return *LocalTransport
-func NewLocalTransport(addr NetAddr) Transport {
+func NewLocalTransport(addr NetAddr) *LocalTransport {
 	return &LocalTransport{
 		addr:        addr,
 		consumeChan: make(chan RPC),
