@@ -62,3 +62,41 @@ type Block struct {
 	Header
 	Transactions []Transaction
 }
+
+// EncodeBinary
+//
+//	@Description: 将h编码入w
+//	@receiver h
+//	@param w
+//	@return error
+func (b *Block) EncodeBinary(w io.Writer) error {
+	if err := b.Header.EncodeBinary(w); err != nil {
+		return err
+	}
+	for _, tx := range b.Transactions {
+		if err := tx.EncodeBinary(w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// DecodeBinary
+//
+//	@Description: 将r中的数据解码入h
+//	@receiver h
+//	@param r
+//	@return error
+func (b *Block) DecodeBinary(r io.Reader) error {
+	if err := b.Header.DecodeBinary(r); err != nil {
+		return err
+	}
+	for _, tx := range b.Transactions {
+		if err := tx.DecodeBinary(r); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
