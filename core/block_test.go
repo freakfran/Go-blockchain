@@ -3,6 +3,7 @@ package core
 import (
 	"MyChain/types"
 	"bytes"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -45,4 +46,21 @@ func TestBlock_Encode_Decode(t *testing.T) {
 	assert.Nil(t, bDecode.DecodeBinary(buf))
 
 	assert.Equal(t, b, bDecode)
+}
+
+func TestBlock_Hash(t *testing.T) {
+	b := &Block{
+		Header: Header{
+			Version:   1,
+			PrevBlock: types.RandomHash(),
+			Timestamp: time.Now().UnixNano(),
+			Height:    10,
+			Nonce:     989964,
+		},
+		Transactions: nil,
+	}
+	assert.True(t, b.hash.IsZero())
+	hash := b.Hash()
+	assert.False(t, b.hash.IsZero())
+	fmt.Println(hash.String())
 }
