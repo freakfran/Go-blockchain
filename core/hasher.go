@@ -22,10 +22,10 @@ type BlockHasher struct {
 // b *Block - 需要计算哈希值的区块。
 // 返回值：
 // types.Hash - 计算得到的哈希值。
-func (BlockHasher) Hash(b *Block) types.Hash {
+func (BlockHasher) Hash(h *Header) types.Hash {
 	// 计算字节缓冲区内容的SHA256哈希值
-	h := sha256.Sum256(b.HeaderData())
+	b := sha256.Sum256(h.Bytes())
 
 	// 返回计算得到的哈希值
-	return types.Hash(h)
+	return types.Hash(b)
 }

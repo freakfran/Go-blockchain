@@ -17,8 +17,18 @@ type Header struct {
 	Height        uint32
 }
 
+func (h *Header) Bytes() []byte {
+	// 创建一个 bytes.Buffer 用于存储序列化后的数据
+	buf := &bytes.Buffer{}
+	// 使用 gob Encoder 将 Block 的头部信息编码到 buf 中
+	encoder := gob.NewEncoder(buf)
+	encoder.Encode(h)
+	// 返回编码后的字节切片
+	return buf.Bytes()
+}
+
 type Block struct {
-	Header
+	*Header
 	Transactions []Transaction
 	Validator    crypto.PublicKey
 	Signature    *crypto.Signature
@@ -28,10 +38,14 @@ type Block struct {
 
 func NewBlock(h *Header, txs []Transaction) *Block {
 	return &Block{
-		Header:       *h,
+		Header:       h,
 		Transactions: txs,
 	}
 
+}
+
+func (b *Block) AddTransaction(tx *Transaction) {
+	b.Transactions = append(b.Transactions, *tx)
 }
 
 func (b *Block) Decode(reader io.Reader, dec Decoder[*Block]) error {
@@ -50,10 +64,10 @@ func (b *Block) Encode(writer io.Writer, enc Encoder[*Block]) error {
 // 返回值：
 //
 //	计算得到的Block哈希值。
-func (b *Block) Hash(hasher Hasher[*Block]) types.Hash {
+func (b *Block) Hash(hasher Hasher[*Header]) types.Hash {
 	// 检查hash是否已经计算，若未计算则使用hasher进行计算
 	if b.hash.IsZero() {
-		b.hash = hasher.Hash(b)
+		b.hash = hasher.Hash(b.Header)
 	}
 	return b.hash
 }
@@ -65,7 +79,7 @@ func (b *Block) Hash(hasher Hasher[*Block]) types.Hash {
 // - error: 执行过程中遇到的错误。
 func (b *Block) Sign(privateKey crypto.PrivateKey) error {
 	// 使用私钥对区块头数据进行签名
-	sign, err := privateKey.Sign(b.HeaderData())
+	sign, err := privateKey.Sign(b.Header.Bytes())
 	if err != nil {
 		return err // 如果签名过程中出现错误，则返回错误
 	}
@@ -81,20 +95,14 @@ func (b *Block) Verify() error {
 	if b.Signature == nil {
 		return fmt.Errorf("block has no signature")
 	}
-	if !b.Signature.Verify(b.Validator, b.HeaderData()) {
+	if !b.Signature.Verify(b.Validator, b.Header.Bytes()) {
 		return fmt.Errorf("invalid signature")
 	}
-	return nil
-}
 
-// HeaderData 将 Block 的头部信息序列化为字节切片返回。
-// 该函数不接受参数，返回值为序列化后的头部信息字节切片。
-func (b *Block) HeaderData() []byte {
-	// 创建一个 bytes.Buffer 用于存储序列化后的数据
-	buf := &bytes.Buffer{}
-	// 使用 gob Encoder 将 Block 的头部信息编码到 buf 中
-	encoder := gob.NewEncoder(buf)
-	encoder.Encode(b.Header)
-	// 返回编码后的字节切片
-	return buf.Bytes()
+	for _, tx := range b.Transactions {
+		if err := tx.Verify(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

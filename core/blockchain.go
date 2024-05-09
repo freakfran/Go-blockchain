@@ -1,5 +1,10 @@
 package core
 
+import (
+	"fmt"
+	"github.com/sirupsen/logrus"
+)
+
 type Blockchain struct {
 	store     Storage
 	headers   []*Header
@@ -43,7 +48,12 @@ func NewBlockChain(genesis *Block) (*Blockchain, error) {
 //	error - 添加过程中遇到的错误，如果没有错误则为 nil。
 func (bc *Blockchain) addBlockWithoutValidation(b *Block) error {
 	// 将新区块的头添加到区块链的头列表中
-	bc.headers = append(bc.headers, &b.Header)
+	bc.headers = append(bc.headers, b.Header)
+
+	logrus.WithFields(logrus.Fields{
+		"height": b.Height,
+		"hash":   b.Hash(BlockHasher{}),
+	}).Infoln("add a new block")
 	// 将区块存储起来，返回可能发生的错误
 	return bc.store.Put(b)
 }
@@ -92,4 +102,11 @@ func (bc *Blockchain) AddBlock(b *Block) error {
 func (bc *Blockchain) Height() uint32 {
 	// 计算并返回Blockchain的高度
 	return uint32(len(bc.headers) - 1)
+}
+
+func (bc *Blockchain) GetHeader(height uint32) (*Header, error) {
+	if height > bc.Height() {
+		return nil, fmt.Errorf("blockchain height is %d, but get %d", bc.Height(), height)
+	}
+	return bc.headers[height], nil
 }

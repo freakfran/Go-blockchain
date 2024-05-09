@@ -7,7 +7,7 @@ import (
 
 type Transaction struct {
 	Data      []byte
-	PublicKey crypto.PublicKey
+	From      crypto.PublicKey
 	Signature *crypto.Signature
 }
 
@@ -26,7 +26,7 @@ func (tx *Transaction) Sign(privateKey crypto.PrivateKey) error {
 	}
 
 	// 设置公钥和签名值
-	tx.PublicKey = privateKey.PublicKey()
+	tx.From = privateKey.PublicKey()
 	tx.Signature = sign
 
 	return nil // 成功完成签名过程，返回nil
@@ -43,7 +43,7 @@ func (tx *Transaction) Verify() error {
 	}
 
 	// 验证签名，如果无效则返回错误
-	if !tx.Signature.Verify(tx.PublicKey, tx.Data) {
+	if !tx.Signature.Verify(tx.From, tx.Data) {
 		return fmt.Errorf("invalid signature")
 	}
 
