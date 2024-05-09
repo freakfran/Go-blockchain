@@ -3,10 +3,12 @@ package core
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 type Blockchain struct {
 	store     Storage
+	lock      sync.RWMutex
 	headers   []*Header
 	validator Validator
 }
@@ -47,8 +49,10 @@ func NewBlockChain(genesis *Block) (*Blockchain, error) {
 //
 //	error - 添加过程中遇到的错误，如果没有错误则为 nil。
 func (bc *Blockchain) addBlockWithoutValidation(b *Block) error {
+	bc.lock.Lock()
 	// 将新区块的头添加到区块链的头列表中
 	bc.headers = append(bc.headers, b.Header)
+	bc.lock.Unlock()
 
 	logrus.WithFields(logrus.Fields{
 		"height": b.Height,
@@ -100,6 +104,8 @@ func (bc *Blockchain) AddBlock(b *Block) error {
 // 返回值：
 // uint32：Blockchain的高度。
 func (bc *Blockchain) Height() uint32 {
+	bc.lock.RLock()
+	defer bc.lock.RUnlock()
 	// 计算并返回Blockchain的高度
 	return uint32(len(bc.headers) - 1)
 }
@@ -108,5 +114,7 @@ func (bc *Blockchain) GetHeader(height uint32) (*Header, error) {
 	if height > bc.Height() {
 		return nil, fmt.Errorf("blockchain height is %d, but get %d", bc.Height(), height)
 	}
+	bc.lock.RLock()
+	defer bc.lock.RUnlock()
 	return bc.headers[height], nil
 }
