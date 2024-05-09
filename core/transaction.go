@@ -2,6 +2,7 @@ package core
 
 import (
 	"MyChain/crypto"
+	"MyChain/types"
 	"fmt"
 )
 
@@ -9,6 +10,16 @@ type Transaction struct {
 	Data      []byte
 	From      crypto.PublicKey
 	Signature *crypto.Signature
+}
+
+func NewTransaction(data []byte) *Transaction {
+	return &Transaction{
+		Data: data,
+	}
+}
+
+func (tx *Transaction) Hash(hasher Hasher[*Transaction]) types.Hash {
+	return hasher.Hash(tx)
 }
 
 // Sign 对交易数据进行签名。

@@ -1,25 +1,29 @@
 package network
 
 import (
+	"MyChain/crypto"
 	"fmt"
 	"time"
 )
 
 type ServerOpts struct {
 	Transports []Transport
+	PrivateKey *crypto.PrivateKey
 }
 
 type Server struct {
 	ServerOpts
-	rpcChan  chan RPC
-	quitChan chan struct{}
+	isValidator bool
+	rpcChan     chan RPC
+	quitChan    chan struct{}
 }
 
 func NewServer(opts ServerOpts) *Server {
 	return &Server{
-		ServerOpts: opts,
-		rpcChan:    make(chan RPC),
-		quitChan:   make(chan struct{}, 1),
+		ServerOpts:  opts,
+		isValidator: opts.PrivateKey != nil,
+		rpcChan:     make(chan RPC),
+		quitChan:    make(chan struct{}, 1),
 	}
 }
 

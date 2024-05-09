@@ -25,7 +25,13 @@ type BlockHasher struct {
 func (BlockHasher) Hash(h *Header) types.Hash {
 	// 计算字节缓冲区内容的SHA256哈希值
 	b := sha256.Sum256(h.Bytes())
-
 	// 返回计算得到的哈希值
 	return types.Hash(b)
+}
+
+type TxHasher struct {
+}
+
+func (TxHasher) Hash(tx *Transaction) types.Hash {
+	return types.Hash(sha256.Sum256(tx.Data))
 }
