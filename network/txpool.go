@@ -38,7 +38,7 @@ func (p *TxPool) Has(hash types.Hash) bool {
 }
 
 // Add 将一个交易添加到交易池中。
-// 如果该交易已经存在于交易池中，则不进行任何操作。
+// 如果该交易已经存在于交易池中，调用方需要确保交易没有已经存在于交易池中
 // 参数：
 //
 //	tx *core.Transaction: 需要添加的交易。
@@ -49,10 +49,6 @@ func (p *TxPool) Has(hash types.Hash) bool {
 func (p *TxPool) Add(tx *core.Transaction) error {
 	// 生成交易的哈希值
 	hash := tx.Hash(core.TxHasher{})
-	// 检查交易是否已经存在于交易池中
-	if p.Has(hash) {
-		return nil
-	}
 	// 将新交易添加到交易池
 	p.transactions[hash] = tx
 	return nil

@@ -10,6 +10,9 @@ type Transaction struct {
 	Data      []byte
 	From      crypto.PublicKey
 	Signature *crypto.Signature
+
+	//cached
+	hash types.Hash
 }
 
 func NewTransaction(data []byte) *Transaction {
@@ -19,7 +22,10 @@ func NewTransaction(data []byte) *Transaction {
 }
 
 func (tx *Transaction) Hash(hasher Hasher[*Transaction]) types.Hash {
-	return hasher.Hash(tx)
+	if tx.hash.IsZero() {
+		tx.hash = hasher.Hash(tx)
+	}
+	return tx.hash
 }
 
 // Sign 对交易数据进行签名。

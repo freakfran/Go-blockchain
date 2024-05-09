@@ -17,6 +17,10 @@ func TestTxPool_Add(t *testing.T) {
 	assert.Nil(t, p.Add(tx))
 	assert.Equal(t, 1, p.Len())
 
+	txx := core.NewTransaction([]byte("foo"))
+	assert.Nil(t, p.Add(txx))
+	assert.Equal(t, 1, p.Len())
+
 	p.Flush()
 	assert.Equal(t, 0, p.Len())
 }
