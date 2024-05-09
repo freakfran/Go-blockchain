@@ -37,9 +37,12 @@ func NewServer(opts ServerOpts) *Server {
 // HandleTransaction 处理一个交易，首先验证交易的有效性，然后检查交易是否已经存在于内存池中。
 // 如果交易无效或已存在，则不进行处理；否则，将交易添加到内存池中。
 // 参数:
-//   tx *core.Transaction: 需要处理的交易对象。
+//
+//	tx *core.Transaction: 需要处理的交易对象。
+//
 // 返回值:
-//   error: 如果处理过程中出现错误，则返回错误对象；否则返回nil。
+//
+//	error: 如果处理过程中出现错误，则返回错误对象；否则返回nil。
 func (s *Server) HandleTransaction(tx *core.Transaction) error {
 	// 验证交易的有效性
 	if err := tx.Verify(); err != nil {
