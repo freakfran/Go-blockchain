@@ -9,11 +9,13 @@ type Blockchain struct {
 // NewBlockChain 创建一个新的区块链实例。
 //
 // 参数:
-//   genesis *Block: 用于初始化区块链的创世区块。
+//
+//	genesis *Block: 用于初始化区块链的创世区块。
 //
 // 返回值:
-//   *Blockchain: 初始化后的区块链实例。
-//   error: 如果在初始化过程中遇到错误，则返回错误信息；否则返回nil。
+//
+//	*Blockchain: 初始化后的区块链实例。
+//	error: 如果在初始化过程中遇到错误，则返回错误信息；否则返回nil。
 func NewBlockChain(genesis *Block) (*Blockchain, error) {
 	// 初始化Blockchain结构体，包括空的区块头切片和一个新的内存存储实例
 	bc := &Blockchain{
@@ -33,9 +35,12 @@ func NewBlockChain(genesis *Block) (*Blockchain, error) {
 // addBlockWithoutValidation 方法用于将一个区块添加到区块链中，但不进行验证。
 // 此方法直接将区块头添加到区块链的头部列表，并通过存储接口将区块存储起来。
 // 参数:
-//   b *Block - 需要被添加到区块链的区块。
+//
+//	b *Block - 需要被添加到区块链的区块。
+//
 // 返回值:
-//   error - 添加过程中遇到的错误，如果没有错误则为 nil。
+//
+//	error - 添加过程中遇到的错误，如果没有错误则为 nil。
 func (bc *Blockchain) addBlockWithoutValidation(b *Block) error {
 	// 将新区块的头添加到区块链的头列表中
 	bc.headers = append(bc.headers, &b.Header)
@@ -65,10 +70,12 @@ func (bc *Blockchain) HasBlock(height uint32) bool {
 // 如果验证成功，则会调用内部函数 addBlockWithoutValidation 来实际添加区块。
 //
 // 参数:
-//   b *Block - 需要添加到区块链的区块。
+//
+//	b *Block - 需要添加到区块链的区块。
 //
 // 返回值:
-//   error - 如果验证失败或其他原因导致添加失败，返回错误信息；否则返回 nil。
+//
+//	error - 如果验证失败或其他原因导致添加失败，返回错误信息；否则返回 nil。
 func (bc *Blockchain) AddBlock(b *Block) error {
 	// 验证区块的有效性
 	err := bc.validator.ValidateBlock(b)

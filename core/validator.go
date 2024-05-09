@@ -16,9 +16,12 @@ func NewBlockValidator(bc *Blockchain) *BlockValidator {
 
 // ValidateBlock 验证给定的Block是否有效。如果Block已经在区块链中存在，或者Block验证失败，将返回错误。
 // 参数:
-//   block: 需要验证的Block对象。
+//
+//	block: 需要验证的Block对象。
+//
 // 返回:
-//   error: 如果Block已存在于区块链（根据Height判断），或者Block验证过程出错，返回一个错误；否则返回nil。
+//
+//	error: 如果Block已存在于区块链（根据Height判断），或者Block验证过程出错，返回一个错误；否则返回nil。
 func (v *BlockValidator) ValidateBlock(block *Block) error {
 	// 检查区块链中是否已经存在该Block的高度
 	if v.bc.HasBlock(block.Height) {
