@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"io"
 )
 
 type Header struct {
@@ -48,11 +47,11 @@ func (b *Block) AddTransaction(tx *Transaction) {
 	b.Transactions = append(b.Transactions, *tx)
 }
 
-func (b *Block) Decode(reader io.Reader, dec Decoder[*Block]) error {
-	return dec.Decode(reader, b)
+func (b *Block) Decode(dec Decoder[*Block]) error {
+	return dec.Decode(b)
 }
-func (b *Block) Encode(writer io.Writer, enc Encoder[*Block]) error {
-	return enc.Encode(writer, b)
+func (b *Block) Encode(enc Encoder[*Block]) error {
+	return enc.Encode(b)
 }
 
 // Hash 计算给定Block的哈希值。
