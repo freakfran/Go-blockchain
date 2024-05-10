@@ -75,3 +75,23 @@ func (t *LocalTransport) SendMessage(to NetAddr, payload []byte) error {
 	}
 	return nil
 }
+
+// Broadcast 向所有的peer广播给定的payload。
+//
+// 参数:
+//
+//	payload []byte - 要广播的数据。
+//
+// 返回值:
+//
+//	error - 如果向任意peer发送消息时遇到错误，则返回该错误；否则返回nil。
+func (t *LocalTransport) Broadcast(payload []byte) error {
+	for _, peer := range t.peers {
+		// 尝试向每个peer发送payload，如果发送失败则立即返回错误。
+		if err := t.SendMessage(peer.Addr(), payload); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

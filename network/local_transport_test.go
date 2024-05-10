@@ -2,7 +2,9 @@ package network
 
 import (
 	"github.com/stretchr/testify/assert"
+	"io"
 	"testing"
+	"time"
 )
 
 // TestLocalTransport_Connect
@@ -29,11 +31,9 @@ func TestLocalTransport_SendMessage(t *testing.T) {
 	tra.Connect(trb)
 	trb.Connect(tra)
 	msg := []byte("hello")
-	// 显式启动一个goroutine来消费trb的消息
+
 	go func() {
-		for {
-			rpc := <-trb.Consume()
-			// 这里可以添加处理消息的逻辑，或者简单记录消息以确保通道不被阻塞
+		for rpc := range trb.Consume() {
 			buf := make([]byte, len(msg))
 			n, err := rpc.Payload.Read(buf)
 			assert.Nil(t, err)
@@ -44,4 +44,34 @@ func TestLocalTransport_SendMessage(t *testing.T) {
 	}()
 
 	assert.Nil(t, tra.SendMessage(trb.Addr(), msg))
+	time.Sleep(5 * time.Second)
+
+}
+func TestLocalTransport_Broadcast(t *testing.T) {
+	tra := NewLocalTransport("A")
+	trb := NewLocalTransport("B")
+	trc := NewLocalTransport("C")
+	tra.Connect(trb)
+	tra.Connect(trc)
+
+	msg := []byte("hello")
+
+	go func() {
+		for rpcb := range trb.Consume() {
+			b, err := io.ReadAll(rpcb.Payload)
+			assert.Nil(t, err)
+			assert.Equal(t, b, msg)
+		}
+	}()
+
+	go func() {
+		for rpcc := range trc.Consume() {
+			c, err := io.ReadAll(rpcc.Payload)
+			assert.Nil(t, err)
+			assert.Equal(t, c, msg)
+		}
+	}()
+	assert.Nil(t, tra.Broadcast(msg))
+
+	time.Sleep(5 * time.Second)
 }

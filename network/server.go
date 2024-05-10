@@ -3,6 +3,7 @@ package network
 import (
 	"MyChain/core"
 	"MyChain/crypto"
+	"bytes"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -67,6 +68,26 @@ func (s *Server) ProcessMessage(message *DecodeMessage) error {
 	return nil
 }
 
+func (s *Server) broadcast(payload []byte) error {
+	for _, tr := range s.Transports {
+		if err := tr.Broadcast(payload); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) broadcastTx(tx *core.Transaction) error {
+	buf := &bytes.Buffer{}
+	if err := tx.Encode(core.NewGobTxEncoder(buf)); err != nil {
+		return err
+	}
+
+	msg := NewMessage(MessageTypeTx, buf.Bytes())
+	return s.broadcast(msg.Bytes())
+}
+
 // processTransaction 处理一个交易，首先验证交易的有效性，然后检查交易是否已经存在于内存池中。
 // 如果交易无效或已存在，则不进行处理；否则，将交易添加到内存池中。
 // 参数:
@@ -92,6 +113,7 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 	tx.SetFirstSeen(time.Now().UnixNano())
 	// 将新交易添加到内存池
 	logrus.WithFields(logrus.Fields{"hash": hash}).Infoln("Add new transaction to memPool")
+	go s.broadcastTx(tx)
 	return s.memPool.Add(tx)
 }
 
