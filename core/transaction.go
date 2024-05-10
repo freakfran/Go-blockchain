@@ -13,6 +13,8 @@ type Transaction struct {
 
 	//cached
 	hash types.Hash
+	//firstSeen is the timestamp when the transaction is first seen locally
+	firstSeen int64
 }
 
 func NewTransaction(data []byte) *Transaction {
@@ -66,4 +68,12 @@ func (tx *Transaction) Verify() error {
 
 	// 验证成功，返回 nil
 	return nil
+}
+
+func (tx *Transaction) SetFirstSeen(firstSeen int64) {
+	tx.firstSeen = firstSeen
+}
+
+func (tx *Transaction) FirstSeen() int64 {
+	return tx.firstSeen
 }

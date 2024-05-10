@@ -3,7 +3,38 @@ package network
 import (
 	"MyChain/core"
 	"MyChain/types"
+	"sort"
 )
+
+type TxMapSorter struct {
+	transactions []*core.Transaction
+}
+
+func (s *TxMapSorter) Len() int {
+	return len(s.transactions)
+}
+
+func (s *TxMapSorter) Less(i, j int) bool {
+	return s.transactions[i].FirstSeen() < s.transactions[j].FirstSeen()
+}
+
+func (s *TxMapSorter) Swap(i, j int) {
+	s.transactions[i], s.transactions[j] = s.transactions[j], s.transactions[i]
+}
+
+func NewTxMapSorter(txMap map[types.Hash]*core.Transaction) *TxMapSorter {
+	txs := make([]*core.Transaction, len(txMap))
+	i := 0
+	for _, tx := range txMap {
+		txs[i] = tx
+		i++
+	}
+	s := &TxMapSorter{
+		transactions: txs,
+	}
+	sort.Sort(s)
+	return s
+}
 
 type TxPool struct {
 	transactions map[types.Hash]*core.Transaction
@@ -13,6 +44,11 @@ func NewTxPool() *TxPool {
 	return &TxPool{
 		transactions: make(map[types.Hash]*core.Transaction),
 	}
+}
+
+func (p *TxPool) Transactions() []*core.Transaction {
+	s := NewTxMapSorter(p.transactions)
+	return s.transactions
 }
 
 func (p *TxPool) Len() int {
