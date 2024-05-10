@@ -68,8 +68,14 @@ func (s *Server) ProcessMessage(message *DecodeMessage) error {
 	return nil
 }
 
+// broadcast将给定的payload广播到所有传输层。
+// 参数:
+// - payload: 需要广播的数据负载。
+// 返回值:
+// - error: 广播过程中遇到的任何错误。
 func (s *Server) broadcast(payload []byte) error {
 	for _, tr := range s.Transports {
+		// 尝试通过每个传输层进行广播，如果有任何一个失败，则返回错误。
 		if err := tr.Broadcast(payload); err != nil {
 			return err
 		}
@@ -78,13 +84,21 @@ func (s *Server) broadcast(payload []byte) error {
 	return nil
 }
 
+// broadcastTx将一个交易广播到所有连接的客户端。
+// 参数:
+// - tx: 需要广播的交易实例。
+// 返回值:
+// - error: 在编码交易或广播过程中遇到的任何错误。
 func (s *Server) broadcastTx(tx *core.Transaction) error {
 	buf := &bytes.Buffer{}
+	// 使用Gob编码器将交易编码为字节流。
 	if err := tx.Encode(core.NewGobTxEncoder(buf)); err != nil {
 		return err
 	}
 
+	// 创建一个包含交易消息的消息对象。
 	msg := NewMessage(MessageTypeTx, buf.Bytes())
+	// 调用broadcast函数将交易消息广播出去。
 	return s.broadcast(msg.Bytes())
 }
 
@@ -113,7 +127,13 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 	tx.SetFirstSeen(time.Now().UnixNano())
 	// 将新交易添加到内存池
 	logrus.WithFields(logrus.Fields{"hash": hash}).Infoln("Add new transaction to memPool")
-	go s.broadcastTx(tx)
+	// 异步广播该交易
+	go func() {
+		err := s.broadcastTx(tx)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{"hash": hash}).Errorf("Broadcast tx error:%v", err)
+		}
+	}()
 	return s.memPool.Add(tx)
 }
 
