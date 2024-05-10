@@ -46,6 +46,9 @@ func NewServer(opts ServerOpts) *Server {
 	if s.RPCProcessor == nil {
 		s.RPCProcessor = s
 	}
+	if s.isValidator {
+		s.validateLoop()
+	}
 	return s
 }
 
@@ -142,8 +145,6 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 func (s *Server) Start() {
 	// 初始化传输层
 	s.initTransports()
-	// 创建一个定时器，按照设定的块间隔时间触发
-	ticker := time.NewTicker(s.BlockTime)
 
 free:
 	for {
@@ -160,17 +161,19 @@ free:
 		case <-s.quitChan:
 			// 接收到退出信号，退出循环
 			break free
-		case <-ticker.C:
-			// 定时器触发，如果是验证者，则创建新块
-			if s.isValidator {
-				s.createNewBlock()
-			}
-
 		}
 	}
 
 	// 打印服务器关闭信息
 	fmt.Println("Server shutdown")
+}
+
+func (s *Server) validateLoop() {
+	ticker := time.NewTicker(s.BlockTime)
+	for {
+		<-ticker.C
+		s.createNewBlock()
+	}
 }
 
 func (s *Server) createNewBlock() error {
