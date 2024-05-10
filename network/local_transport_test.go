@@ -34,7 +34,11 @@ func TestLocalTransport_SendMessage(t *testing.T) {
 		for {
 			rpc := <-trb.Consume()
 			// 这里可以添加处理消息的逻辑，或者简单记录消息以确保通道不被阻塞
-			assert.Equal(t, rpc.Payload, msg)
+			buf := make([]byte, len(msg))
+			n, err := rpc.Payload.Read(buf)
+			assert.Nil(t, err)
+			assert.Equal(t, n, len(msg))
+			assert.Equal(t, buf, msg)
 			assert.Equal(t, rpc.From, tra.Addr())
 		}
 	}()

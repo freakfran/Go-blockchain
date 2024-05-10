@@ -12,6 +12,7 @@ var defaultBlockTime = 5 * time.Second
 
 // ServerOpts represents the options used to create a new Server.
 type ServerOpts struct {
+	RPCHandler RPCHandler
 	Transports []Transport
 	BlockTime  time.Duration
 	PrivateKey *crypto.PrivateKey
@@ -31,7 +32,7 @@ func NewServer(opts ServerOpts) *Server {
 	if opts.BlockTime == time.Duration(0) {
 		opts.BlockTime = defaultBlockTime
 	}
-	return &Server{
+	s := &Server{
 		ServerOpts:  opts,
 		blockTime:   opts.BlockTime,
 		memPool:     NewTxPool(),
@@ -39,9 +40,14 @@ func NewServer(opts ServerOpts) *Server {
 		rpcChan:     make(chan RPC),
 		quitChan:    make(chan struct{}, 1),
 	}
+	if opts.RPCHandler == nil {
+		opts.RPCHandler = NewDefaultRPCHandler(s)
+	}
+	s.ServerOpts = opts
+	return s
 }
 
-// HandleTransaction 处理一个交易，首先验证交易的有效性，然后检查交易是否已经存在于内存池中。
+// ProcessTransaction 处理一个交易，首先验证交易的有效性，然后检查交易是否已经存在于内存池中。
 // 如果交易无效或已存在，则不进行处理；否则，将交易添加到内存池中。
 // 参数:
 //
@@ -50,18 +56,20 @@ func NewServer(opts ServerOpts) *Server {
 // 返回值:
 //
 //	error: 如果处理过程中出现错误，则返回错误对象；否则返回nil。
-func (s *Server) HandleTransaction(tx *core.Transaction) error {
-	// 验证交易的有效性
-	if err := tx.Verify(); err != nil {
-		return err
-	}
+func (s *Server) ProcessTransaction(from NetAddr, tx *core.Transaction) error {
 	// 计算交易的哈希值
 	hash := tx.Hash(core.TxHasher{})
 	// 检查交易是否已存在于内存池中
 	if s.memPool.Has(hash) {
-		logrus.WithFields(logrus.Fields{"hash": hash}).Infoln("Transaction already exists in memPool")
+		logrus.WithFields(logrus.Fields{"hash": hash, "memPool length": s.memPool.Len()}).Infoln("Transaction already exists in memPool")
 		return nil
 	}
+	// 验证交易的有效性
+	if err := tx.Verify(); err != nil {
+		return err
+	}
+
+	tx.SetFirstSeen(time.Now().UnixNano())
 	// 将新交易添加到内存池
 	logrus.WithFields(logrus.Fields{"hash": hash}).Infoln("Add new transaction to memPool")
 	return s.memPool.Add(tx)
@@ -80,7 +88,9 @@ free:
 		select {
 		case rpc := <-s.rpcChan:
 			// 处理RPC请求
-			fmt.Printf("%+v\n", rpc)
+			if err := s.RPCHandler.HandleRPC(rpc); err != nil {
+				logrus.Error(err)
+			}
 		case <-s.quitChan:
 			// 接收到退出信号，退出循环
 			break free

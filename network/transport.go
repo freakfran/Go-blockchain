@@ -2,11 +2,6 @@ package network
 
 type NetAddr string
 
-type RPC struct {
-	From    NetAddr
-	Payload []byte
-}
-
 // Transport
 //
 //	@Description: 传输
