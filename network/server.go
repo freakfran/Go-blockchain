@@ -12,16 +12,16 @@ var defaultBlockTime = 5 * time.Second
 
 // ServerOpts represents the options used to create a new Server.
 type ServerOpts struct {
-	RPCHandler RPCHandler
-	Transports []Transport
-	BlockTime  time.Duration
-	PrivateKey *crypto.PrivateKey
+	RPCDecodeFunc RPCDecodeFunc
+	RPCProcessor  RPCProcessor
+	Transports    []Transport
+	BlockTime     time.Duration
+	PrivateKey    *crypto.PrivateKey
 }
 
 // Server represents a server that listens for incoming connections and handles them.
 type Server struct {
 	ServerOpts
-	blockTime   time.Duration
 	memPool     *TxPool
 	isValidator bool
 	rpcChan     chan RPC
@@ -32,22 +32,32 @@ func NewServer(opts ServerOpts) *Server {
 	if opts.BlockTime == time.Duration(0) {
 		opts.BlockTime = defaultBlockTime
 	}
+	if opts.RPCDecodeFunc == nil {
+		opts.RPCDecodeFunc = DefaultRPCDecodeFunc
+	}
 	s := &Server{
 		ServerOpts:  opts,
-		blockTime:   opts.BlockTime,
 		memPool:     NewTxPool(),
 		isValidator: opts.PrivateKey != nil,
 		rpcChan:     make(chan RPC),
 		quitChan:    make(chan struct{}, 1),
 	}
-	if opts.RPCHandler == nil {
-		opts.RPCHandler = NewDefaultRPCHandler(s)
+	if s.RPCProcessor == nil {
+		s.RPCProcessor = s
 	}
-	s.ServerOpts = opts
 	return s
 }
 
-// ProcessTransaction 处理一个交易，首先验证交易的有效性，然后检查交易是否已经存在于内存池中。
+func (s *Server) ProcessMessage(message *DecodeMessage) error {
+	switch t := message.Data.(type) {
+	case *core.Transaction:
+		return s.processTransaction(t)
+	}
+
+	return nil
+}
+
+// processTransaction 处理一个交易，首先验证交易的有效性，然后检查交易是否已经存在于内存池中。
 // 如果交易无效或已存在，则不进行处理；否则，将交易添加到内存池中。
 // 参数:
 //
@@ -56,7 +66,7 @@ func NewServer(opts ServerOpts) *Server {
 // 返回值:
 //
 //	error: 如果处理过程中出现错误，则返回错误对象；否则返回nil。
-func (s *Server) ProcessTransaction(from NetAddr, tx *core.Transaction) error {
+func (s *Server) processTransaction(tx *core.Transaction) error {
 	// 计算交易的哈希值
 	hash := tx.Hash(core.TxHasher{})
 	// 检查交易是否已存在于内存池中
@@ -81,14 +91,18 @@ func (s *Server) Start() {
 	// 初始化传输层
 	s.initTransports()
 	// 创建一个定时器，按照设定的块间隔时间触发
-	ticker := time.NewTicker(s.blockTime)
+	ticker := time.NewTicker(s.BlockTime)
 
 free:
 	for {
 		select {
 		case rpc := <-s.rpcChan:
 			// 处理RPC请求
-			if err := s.RPCHandler.HandleRPC(rpc); err != nil {
+			msg, err := s.RPCDecodeFunc(rpc)
+			if err != nil {
+				logrus.Error(err)
+			}
+			if err := s.ProcessMessage(msg); err != nil {
 				logrus.Error(err)
 			}
 		case <-s.quitChan:
