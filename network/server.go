@@ -48,12 +48,22 @@ func NewServer(opts ServerOpts) *Server {
 	return s
 }
 
+// ProcessMessage 处理接收到的消息。
+//
+// 参数:
+// message: 包含待处理消息的 DecodeMessage 指针。
+//
+// 返回值:
+// 返回处理过程中可能出现的错误，如果处理成功则返回 nil。
 func (s *Server) ProcessMessage(message *DecodeMessage) error {
+	// 根据消息类型使用多态方式调用相应的处理函数
 	switch t := message.Data.(type) {
 	case *core.Transaction:
+		// 处理交易消息
 		return s.processTransaction(t)
 	}
 
+	// 如果消息类型不匹配任何已知类型，则不处理，返回 nil
 	return nil
 }
 
