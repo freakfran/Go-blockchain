@@ -8,12 +8,16 @@ import (
 	"time"
 )
 
+var defaultBlockTime = 5 * time.Second
+
+// ServerOpts represents the options used to create a new Server.
 type ServerOpts struct {
 	Transports []Transport
 	BlockTime  time.Duration
 	PrivateKey *crypto.PrivateKey
 }
 
+// Server represents a server that listens for incoming connections and handles them.
 type Server struct {
 	ServerOpts
 	blockTime   time.Duration
@@ -24,6 +28,9 @@ type Server struct {
 }
 
 func NewServer(opts ServerOpts) *Server {
+	if opts.BlockTime == time.Duration(0) {
+		opts.BlockTime = defaultBlockTime
+	}
 	return &Server{
 		ServerOpts:  opts,
 		blockTime:   opts.BlockTime,
